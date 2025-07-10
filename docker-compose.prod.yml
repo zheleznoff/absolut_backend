@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      dockerfile: Dockerfile.prod
+    command: >
+      sh -c "python src/manage.py migrate &&
+             python src/manage.py collectstatic --noinput &&
+             gunicorn src.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+    environment:
+      - DEBUG=${DEBUG:-False}
+    env_file:
+      - .env.prod
+    volumes:
+      - static_volume:/app/src/static
+      - media_volume:/app/src/media
+    restart: always
+
+  postgres:
+    environment:
+      POSTGRES_DB: ${DB_NAME:-absolut_db}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_prod_data:

@@ -6,7 +6,8 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv pip install --system --no-deps -r <(uv pip compile --no-emit-index-url --no-emit-find-links pyproject.toml)
+RUN uv pip compile --no-emit-index-url --no-emit-find-links pyproject.toml -o requirements.txt
+RUN uv pip install --system --no-deps -r requirements.txt
 
 COPY . .
 

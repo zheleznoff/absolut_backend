@@ -1,0 +1,80 @@
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python src/manage.py migrate &&
+             python src/manage.py collectstatic --noinput &&
+             gunicorn src.wsgi:application --bind 0.0.0.0:8000 --reload"
+    volumes:
+      - ./src:/app/src
+      - ./src/media:/app/src/media
+      - ./src/static:/app/src/static
+    environment:
+      - DEBUG=${DEBUG}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: absolut_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-postgres}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  # Для разработки - hot reload
+  backend-dev:
+    build:
+      context: ./
+      dockerfile: Dockerfile.dev
+    command: python src/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./src:/app/src
+    environment:
+      - DEBUG=${DEBUG}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_DEV_PORT:-8001}:8000"
+    networks:
+      - app_network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  app_network:
+    driver: bridge

@@ -1,0 +1,25 @@
+# Dockerfile.dev - для разработки
+FROM python:3.12-slim
+
+RUN pip install uv
+
+WORKDIR /app
+
+# Установка зависимостей для разработки
+COPY pyproject.toml uv.lock ./
+
+RUN uv pip compile --no-emit-index-url --no-emit-find-links pyproject.toml -o requirements.txt
+RUN uv pip install --system --no-deps -r requirements.txt
+
+# Установка дополнительных пакетов для разработки
+RUN pip install django-debug-toolbar ipython
+
+COPY . .
+
+# Создание директорий для медиа и статики
+RUN mkdir -p src/media src/static
+
+EXPOSE 8000
+
+# Для разработки запускаем Django dev server
+CMD ["python", "src/manage.py", "runserver", "0.0.0.0:8000"]

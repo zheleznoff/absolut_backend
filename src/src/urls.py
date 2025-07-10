@@ -26,7 +26,6 @@ urlpatterns = [
         "api/",
         include(
             [
-                path("", include("cargo.api.urls")),
                 path("", include("order_statuses.api.urls")),
                 path("", include("packaging.api.urls")),
                 path("", include("services.api.urls")),

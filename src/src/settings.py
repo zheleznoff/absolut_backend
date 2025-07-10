@@ -74,7 +74,6 @@ INSTALLED_APPS = [
     "packaging",
     "services",
     "order_statuses",
-    "cargo",
     "orders",
 ]
 
